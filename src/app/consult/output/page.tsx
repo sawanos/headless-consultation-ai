@@ -22,6 +22,7 @@ export default function OutputPage() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [ragContext, setRagContext] = useState<string | null>(null);
 
   useEffect(() => {
     if (!category || !assessment) {
@@ -38,7 +39,9 @@ export default function OutputPage() {
       })
         .then((res) => res.json())
         .then((data) => {
-          setOutput(data);
+          const { ragContext: ctx, ...outputData } = data;
+          setOutput(outputData);
+          setRagContext(ctx || null);
           setGenerating(false);
         })
         .catch(() => {
@@ -134,6 +137,17 @@ export default function OutputPage() {
           variant="highlight"
         />
         <OutputCard title="申し送り" content={output.handoverText} />
+
+        {ragContext && (
+          <div className="bg-purple-50 rounded-2xl p-6 border-2 border-purple-100">
+            <h3 className="text-sm font-bold text-purple-500 uppercase mb-2">
+              参考資料（ガイドライン）
+            </h3>
+            <p className="text-sm text-purple-700 whitespace-pre-wrap leading-relaxed">
+              {ragContext}
+            </p>
+          </div>
+        )}
 
         <div className="bg-gray-50 rounded-2xl p-4">
           <p className="text-sm text-gray-500">

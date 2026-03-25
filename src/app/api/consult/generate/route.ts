@@ -29,5 +29,5 @@ export async function POST(request: NextRequest) {
   }
 
   const output = await generateWithLLM(category, answers, assessment, ragContext);
-  return NextResponse.json(output);
+  return NextResponse.json({ ...output, ragContext: ragContext || null });
 }
