@@ -1,27 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { saveEncounterLog } from "@/lib/storage";
+import { SendRequestSchema } from "@/lib/validators";
 import { EncounterLog } from "@/types/consult";
 import { v4 as uuidv4 } from "uuid";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { caseId, startedAt, edited } = body as {
-    caseId: string;
-    startedAt: string;
-    edited: boolean;
-  };
+  const parsed = SendRequestSchema.safeParse(body);
 
-  if (!caseId || !startedAt) {
-    return NextResponse.json(
-      { error: "caseId and startedAt are required" },
-      { status: 400 }
-    );
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
+  const { caseId, startedAt, edited } = parsed.data;
   const now = new Date().toISOString();
-  const start = new Date(startedAt).getTime();
-  const end = new Date(now).getTime();
-  const durationSec = Math.round((end - start) / 1000);
+  const durationSec = Math.round(
+    (new Date(now).getTime() - new Date(startedAt).getTime()) / 1000
+  );
 
   const log: EncounterLog = {
     id: uuidv4(),
@@ -29,11 +24,10 @@ export async function POST(request: NextRequest) {
     startedAt,
     completedAt: now,
     durationSec,
-    edited: edited || false,
+    edited,
     sent: true,
   };
 
   saveEncounterLog(log);
-
   return NextResponse.json({ success: true, log });
 }

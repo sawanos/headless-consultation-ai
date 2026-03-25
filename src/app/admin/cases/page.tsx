@@ -1,17 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { EncounterLog } from "@/types/consult";
-import PriorityBadge from "@/components/PriorityBadge";
 import Link from "next/link";
 
 export default function AdminCasesPage() {
   const [logs, setLogs] = useState<EncounterLog[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchLogs = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/logs");
+      const data = await res.json();
+      setLogs(data.logs || []);
+    } catch {
+      // サーバーエラー時は空配列
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    // PoCではin-memoryなので、実際のケースログはサーバー再起動でリセットされる
-    // Phase 4でDB永続化予定
-  }, []);
+    fetchLogs();
+  }, [fetchLogs]);
 
   return (
     <div className="px-4 py-8">
@@ -25,7 +36,11 @@ export default function AdminCasesPage() {
         </Link>
       </div>
 
-      {logs.length === 0 ? (
+      {loading ? (
+        <div className="text-center py-20">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+        </div>
+      ) : logs.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-lg text-gray-400">まだケースがありません</p>
           <p className="text-sm text-gray-300 mt-2">
@@ -53,12 +68,12 @@ export default function AdminCasesPage() {
                   {log.sent ? "送信済" : "未送信"}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600">
+              <div className="flex items-center gap-3 text-sm text-gray-600">
+                <span>
                   所要時間: {log.durationSec ? `${log.durationSec}秒` : "-"}
                 </span>
                 {log.edited && (
-                  <span className="text-xs text-orange-500">修正あり</span>
+                  <span className="text-orange-500">修正あり</span>
                 )}
               </div>
             </div>

@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCategoryById } from "@/lib/categories";
+import { QuickGuideRequestSchema } from "@/lib/validators";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { category } = body;
+  const parsed = QuickGuideRequestSchema.safeParse(body);
 
-  if (!category) {
-    return NextResponse.json({ error: "category is required" }, { status: 400 });
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const cat = getCategoryById(category);
+  const cat = getCategoryById(parsed.data.category);
   if (!cat) {
     return NextResponse.json({ error: "unknown category" }, { status: 400 });
   }
