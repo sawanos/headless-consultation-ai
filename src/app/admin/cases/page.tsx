@@ -28,12 +28,20 @@ export default function AdminCasesPage() {
     <div className="px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800">ケース一覧</h1>
-        <Link
-          href="/"
-          className="text-blue-500 hover:text-blue-600 text-sm font-medium"
-        >
-          トップへ
-        </Link>
+        <div className="flex gap-3 text-sm">
+          <Link
+            href="/admin/docs"
+            className="text-blue-500 hover:text-blue-600 font-medium"
+          >
+            文書管理
+          </Link>
+          <Link
+            href="/"
+            className="text-blue-500 hover:text-blue-600 font-medium"
+          >
+            トップへ
+          </Link>
+        </div>
       </div>
 
       {loading ? (

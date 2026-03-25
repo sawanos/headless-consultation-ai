@@ -1,6 +1,7 @@
 import { ConsultationOutput, InterviewAnswer, Assessment } from "@/types/consult";
 import { getCategoryById } from "./categories";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompt";
+import { retrieveForConsult } from "./rag";
 
 // ダミー出力生成（Phase 1-2: LLM未接続時のフォールバック）
 export function generateDummyOutput(
@@ -49,6 +50,20 @@ export async function generateWithLLM(
   }
 
   try {
+    // RAG コンテキスト取得（失敗してもフォールバック）
+    let ragContext = "";
+    try {
+      ragContext = await retrieveForConsult(
+        category.label,
+        answers.map((a) => ({ question: a.question, answer: a.answer }))
+      );
+      if (ragContext) {
+        console.log(`[RAG] Context injected: ${ragContext.length} chars`);
+      }
+    } catch (err) {
+      console.warn("[RAG] retrieval failed, skipping:", err);
+    }
+
     const userPrompt = buildUserPrompt(
       category.label,
       answers.map((a) => ({ question: a.question, answer: a.answer })),
@@ -57,7 +72,8 @@ export async function generateWithLLM(
         target: assessment.target,
         actions: assessment.actions,
         safetyNote: assessment.safetyNote,
-      }
+      },
+      ragContext
     );
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {

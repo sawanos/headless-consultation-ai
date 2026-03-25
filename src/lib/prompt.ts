@@ -24,14 +24,19 @@ export function buildUserPrompt(
     target: string;
     actions: string[];
     safetyNote: string;
-  }
+  },
+  ragContext?: string
 ): string {
   const answersText = answers
     .map((a) => `- ${a.question}: ${a.answer || "不明"}`)
     .join("\n");
 
-  return `以下のケース情報から、summary, doctor_message, sbar, handover_text を生成してください。
+  const contextSection = ragContext
+    ? `\n参考資料（施設ガイドライン等）:\n${ragContext}\n`
+    : "";
 
+  return `以下のケース情報から、summary, doctor_message, sbar, handover_text を生成してください。
+${contextSection}
 カテゴリ: ${categoryLabel}
 回答:
 ${answersText}
