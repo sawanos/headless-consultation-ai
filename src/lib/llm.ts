@@ -1,4 +1,4 @@
-import { ConsultationOutput, InterviewAnswer, Assessment } from "@/types/consult";
+import { ConsultationOutput, InterviewAnswer, Assessment, VitalSigns, FreeTextInput } from "@/types/consult";
 import { getCategoryById } from "./categories";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompt";
 
@@ -36,7 +36,9 @@ export async function generateWithLLM(
   categoryId: string,
   answers: InterviewAnswer[],
   assessment: Assessment,
-  ragContext?: string
+  ragContext?: string,
+  vitals?: VitalSigns,
+  freeText?: FreeTextInput
 ): Promise<ConsultationOutput> {
   const category = getCategoryById(categoryId);
   if (!category) {
@@ -63,7 +65,9 @@ export async function generateWithLLM(
         actions: assessment.actions,
         safetyNote: assessment.safetyNote,
       },
-      ragContext
+      ragContext,
+      vitals,
+      freeText
     );
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {

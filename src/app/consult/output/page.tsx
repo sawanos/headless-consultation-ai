@@ -6,6 +6,7 @@ import { generateDummyOutput } from "@/lib/llm";
 import PriorityBadge from "@/components/PriorityBadge";
 import OutputCard from "@/components/OutputCard";
 import StickyFooter from "@/components/StickyFooter";
+import VitalsSummaryCard from "@/components/VitalsSummaryCard";
 import { useEffect, useState } from "react";
 
 export default function OutputPage() {
@@ -18,6 +19,8 @@ export default function OutputPage() {
   const caseId = useConsultStore((s) => s.caseId);
   const startedAt = useConsultStore((s) => s.startedAt);
   const reset = useConsultStore((s) => s.reset);
+  const vitalSigns = useConsultStore((s) => s.vitalSigns);
+  const freeTextInput = useConsultStore((s) => s.freeTextInput);
 
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -35,7 +38,13 @@ export default function OutputPage() {
       fetch("/api/consult/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category, answers, assessment }),
+        body: JSON.stringify({
+          category,
+          answers,
+          assessment,
+          ...(vitalSigns ? { vitals: vitalSigns } : {}),
+          ...(freeTextInput ? { freeText: freeTextInput } : {}),
+        }),
       })
         .then((res) => res.json())
         .then((data) => {
@@ -137,6 +146,8 @@ export default function OutputPage() {
           variant="highlight"
         />
         <OutputCard title="申し送り" content={output.handoverText} />
+
+        {vitalSigns && <VitalsSummaryCard vitals={vitalSigns} />}
 
         {ragContext && (
           <div className="bg-purple-50 rounded-2xl p-6 border-2 border-purple-100">

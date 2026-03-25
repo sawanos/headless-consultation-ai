@@ -6,6 +6,7 @@ import { assessRisk } from "@/lib/risk-engine";
 import PriorityBadge from "@/components/PriorityBadge";
 import ActionList from "@/components/ActionList";
 import StickyFooter from "@/components/StickyFooter";
+import VitalStatusBadge from "@/components/vitals/VitalStatusBadge";
 import { useEffect } from "react";
 
 export default function AssessmentPage() {
@@ -14,6 +15,8 @@ export default function AssessmentPage() {
   const answers = useConsultStore((s) => s.answers);
   const assessment = useConsultStore((s) => s.assessment);
   const setAssessment = useConsultStore((s) => s.setAssessment);
+  const vitalSigns = useConsultStore((s) => s.vitalSigns);
+  const freeTextInput = useConsultStore((s) => s.freeTextInput);
 
   useEffect(() => {
     if (!category || answers.length === 0) {
@@ -21,10 +24,15 @@ export default function AssessmentPage() {
       return;
     }
     if (!assessment) {
-      const result = assessRisk(category, answers);
+      const result = assessRisk(
+        category,
+        answers,
+        vitalSigns ?? undefined,
+        freeTextInput ?? undefined
+      );
       setAssessment(result);
     }
-  }, [category, answers, assessment, setAssessment, router]);
+  }, [category, answers, assessment, setAssessment, vitalSigns, freeTextInput, router]);
 
   if (!assessment) return null;
 
@@ -35,6 +43,27 @@ export default function AssessmentPage() {
       ? "内科"
       : "主治医（かかりつけ医）";
 
+  // バイタル異常を収集
+  const vitalAlerts: { label: string; value: string; status: "caution" | "abnormal" }[] = [];
+  if (vitalSigns) {
+    const labels: Record<string, string> = {
+      temperature: "体温",
+      spo2: "SpO2",
+      pulse: "脈拍",
+      bloodPressure: "血圧",
+      respiratoryRate: "呼吸数",
+    };
+    for (const [key, reading] of Object.entries(vitalSigns)) {
+      if (reading.status === "abnormal" || reading.status === "caution") {
+        vitalAlerts.push({
+          label: labels[key] || key,
+          value: reading.value || "",
+          status: reading.status,
+        });
+      }
+    }
+  }
+
   return (
     <div className="px-4 py-8 pb-32">
       <div className="text-center mb-8">
@@ -43,6 +72,22 @@ export default function AssessmentPage() {
           {assessment.reason}
         </p>
       </div>
+
+      {vitalAlerts.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
+          <h3 className="text-sm font-bold text-amber-700 mb-2">バイタル異常値</h3>
+          <div className="space-y-1">
+            {vitalAlerts.map((a, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <VitalStatusBadge status={a.status} size="sm" />
+                <span className="text-sm text-gray-700">
+                  {a.label}: {a.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         <ActionList actions={assessment.actions} />

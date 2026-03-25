@@ -1,4 +1,4 @@
-import { Assessment, ConcernCategory, InterviewAnswer } from "@/types/consult";
+import { Assessment, ConcernCategory, InterviewAnswer, VitalSigns, FreeTextInput, Priority } from "@/types/consult";
 
 function findAnswer(answers: InterviewAnswer[], questionId: string): string | null {
   const a = answers.find((ans) => ans.questionId === questionId);
@@ -149,9 +149,48 @@ function getActions(priority: Assessment["priority"], category: ConcernCategory)
   ];
 }
 
+function promotePriority(current: Priority, candidate: Priority): Priority {
+  const order: Priority[] = ["RED", "ORANGE", "YELLOW", "BLUE"];
+  return order.indexOf(candidate) < order.indexOf(current) ? candidate : current;
+}
+
+function applyVitalOverride(
+  currentPriority: Priority,
+  vitals: VitalSigns
+): { priority: Priority; alerts: string[] } {
+  let priority = currentPriority;
+  const alerts: string[] = [];
+
+  const entries = Object.entries(vitals) as [keyof VitalSigns, VitalSigns[keyof VitalSigns]][];
+  for (const [key, reading] of entries) {
+    if (reading.status === "abnormal") {
+      priority = promotePriority(priority, "ORANGE");
+      const labels: Record<string, string> = {
+        temperature: "体温",
+        spo2: "SpO2",
+        pulse: "脈拍",
+        bloodPressure: "血圧",
+        respiratoryRate: "呼吸数",
+      };
+      alerts.push(`${labels[key] || key}: ${reading.value}（異常値）`);
+    } else if (reading.status === "caution") {
+      priority = promotePriority(priority, "YELLOW");
+    }
+  }
+
+  return { priority, alerts };
+}
+
+function buildVitalReason(baseReason: string, vitalAlerts: string[]): string {
+  if (vitalAlerts.length === 0) return baseReason;
+  return `${baseReason}\nバイタル異常: ${vitalAlerts.join("、")}`;
+}
+
 export function assessRisk(
   category: ConcernCategory,
-  answers: InterviewAnswer[]
+  answers: InterviewAnswer[],
+  vitals?: VitalSigns,
+  freeText?: FreeTextInput
 ): Assessment {
   let priority: Assessment["priority"];
 
@@ -176,6 +215,22 @@ export function assessRisk(
   const actions = getActions(priority, category);
   const oneQuestion = getOneQuestion(category);
 
+  // バイタルオーバーライド
+  let vitalAlerts: string[] = [];
+  if (vitals) {
+    const overrideResult = applyVitalOverride(priority, vitals);
+    priority = overrideResult.priority;
+    vitalAlerts = overrideResult.alerts;
+  }
+
+  // フリーテキストの高緊急度観察
+  if (freeText?.isStructured && freeText.structured.length > 0) {
+    const hasHighUrgency = freeText.structured.some((s) => s.urgencyContribution === "high");
+    if (hasHighUrgency) {
+      priority = promotePriority(priority, "ORANGE");
+    }
+  }
+
   const reasonMap: Record<Assessment["priority"], string> = {
     RED: "救急連絡基準に該当する兆候が確認されています。直ちに主治医への連絡・救急要請の検討が必要です。",
     ORANGE: "注意を要する変化の兆候が確認されています。当日中の主治医への共有が必要です。",
@@ -183,10 +238,12 @@ export function assessRisk(
     BLUE: "現時点で緊急性を示す兆候は確認されていません。経過を記録し、定期訪問で観察を継続してください。",
   };
 
+  const reason = buildVitalReason(reasonMap[priority], vitalAlerts);
+
   return {
     priority,
-    reason: reasonMap[priority],
-    actions,
+    reason,
+    actions: getActions(priority, category),
     oneQuestion,
     bridge: priority === "RED" || priority === "ORANGE",
     target,

@@ -111,6 +111,36 @@ export type AnalyticsEvent =
   | { type: "message_edited"; at: string }
   | { type: "message_sent"; at: string };
 
+// ===== Vital Signs =====
+export type VitalReading = {
+  value: string | null;
+  inputMode: "tab" | "freetext" | "not_measured";
+  status: "normal" | "caution" | "abnormal" | "unknown";
+};
+
+export type VitalSigns = {
+  temperature: VitalReading;
+  spo2: VitalReading;
+  pulse: VitalReading;
+  bloodPressure: VitalReading;
+  respiratoryRate: VitalReading;
+};
+
+// ===== Free Text & Structured Additional Info =====
+export type StructuredObservation = {
+  type: "symptom" | "behavior" | "vital" | "history" | "medication" | "environment" | "unknown";
+  content: string;
+  urgencyContribution: "high" | "medium" | "low" | "neutral";
+  sourceText: string;
+};
+
+export type FreeTextInput = {
+  rawText: string;
+  isStructured: boolean;
+  structured: StructuredObservation[];
+  processing: boolean;
+};
+
 // ===== Consultation State (Zustand) =====
 
 export type ConsultState = {
@@ -122,6 +152,8 @@ export type ConsultState = {
   assessment: Assessment | null;
   output: ConsultationOutput | null;
   startedAt: string | null;
+  vitalSigns: VitalSigns | null;
+  freeTextInput: FreeTextInput | null;
 
   setCategory: (category: ConcernCategory) => void;
   setQuickGuide: (guide: QuickGuideSnapshot) => void;
@@ -129,6 +161,9 @@ export type ConsultState = {
   setAnswers: (answers: InterviewAnswer[]) => void;
   setAssessment: (assessment: Assessment) => void;
   setOutput: (output: ConsultationOutput) => void;
+  setVitalSigns: (vitals: VitalSigns) => void;
+  setFreeTextInput: (input: FreeTextInput) => void;
+  updateFreeTextStructured: (structured: StructuredObservation[]) => void;
   startConsult: () => void;
   reset: () => void;
 };

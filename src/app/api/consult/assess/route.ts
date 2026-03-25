@@ -10,6 +10,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const assessment = assessRisk(parsed.data.category, parsed.data.answers);
+  const assessment = assessRisk(
+    parsed.data.category,
+    parsed.data.answers,
+    parsed.data.vitals,
+    parsed.data.freeText
+  );
   return NextResponse.json(assessment);
 }

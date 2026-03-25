@@ -28,9 +28,39 @@ export const InterviewAnswerSchema = z.object({
   answerLabel: z.string(),
 });
 
+export const VitalReadingSchema = z.object({
+  value: z.string().nullable(),
+  inputMode: z.enum(["tab", "freetext", "not_measured"]),
+  status: z.enum(["normal", "caution", "abnormal", "unknown"]),
+});
+
+export const VitalSignsSchema = z.object({
+  temperature: VitalReadingSchema,
+  spo2: VitalReadingSchema,
+  pulse: VitalReadingSchema,
+  bloodPressure: VitalReadingSchema,
+  respiratoryRate: VitalReadingSchema,
+});
+
+export const StructuredObservationSchema = z.object({
+  type: z.enum(["symptom", "behavior", "vital", "history", "medication", "environment", "unknown"]),
+  content: z.string(),
+  urgencyContribution: z.enum(["high", "medium", "low", "neutral"]),
+  sourceText: z.string(),
+});
+
+export const FreeTextInputSchema = z.object({
+  rawText: z.string(),
+  isStructured: z.boolean(),
+  structured: z.array(StructuredObservationSchema),
+  processing: z.boolean(),
+});
+
 export const AssessRequestSchema = z.object({
   category: ConcernCategorySchema,
   answers: z.array(InterviewAnswerSchema),
+  vitals: VitalSignsSchema.optional(),
+  freeText: FreeTextInputSchema.optional(),
 });
 
 export const AssessmentSchema = z.object({
@@ -47,6 +77,8 @@ export const GenerateRequestSchema = z.object({
   category: z.string(),
   answers: z.array(InterviewAnswerSchema),
   assessment: AssessmentSchema,
+  vitals: VitalSignsSchema.optional(),
+  freeText: FreeTextInputSchema.optional(),
 });
 
 export const SendRequestSchema = z.object({

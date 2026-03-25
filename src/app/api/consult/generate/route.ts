@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { category, answers, assessment } = parsed.data;
+  const { category, answers, assessment, vitals, freeText } = parsed.data;
 
   // RAG コンテキスト取得（サーバーサイドのみ）
   let ragContext = "";
@@ -28,6 +28,6 @@ export async function POST(request: NextRequest) {
     console.warn("[RAG] retrieval failed, skipping:", err);
   }
 
-  const output = await generateWithLLM(category, answers, assessment, ragContext);
+  const output = await generateWithLLM(category, answers, assessment, ragContext, vitals, freeText);
   return NextResponse.json({ ...output, ragContext: ragContext || null });
 }

@@ -11,6 +11,8 @@ export const useConsultStore = create<ConsultState>((set) => ({
   assessment: null,
   output: null,
   startedAt: null,
+  vitalSigns: null,
+  freeTextInput: null,
 
   startConsult: () =>
     set({
@@ -22,6 +24,8 @@ export const useConsultStore = create<ConsultState>((set) => ({
       answers: [],
       assessment: null,
       output: null,
+      vitalSigns: null,
+      freeTextInput: null,
     }),
 
   setCategory: (category) => set({ category }),
@@ -30,6 +34,14 @@ export const useConsultStore = create<ConsultState>((set) => ({
   setAnswers: (answers) => set({ answers }),
   setAssessment: (assessment) => set({ assessment }),
   setOutput: (output) => set({ output }),
+  setVitalSigns: (vitals) => set({ vitalSigns: vitals }),
+  setFreeTextInput: (input) => set({ freeTextInput: input }),
+  updateFreeTextStructured: (structured) =>
+    set((state) => ({
+      freeTextInput: state.freeTextInput
+        ? { ...state.freeTextInput, structured, isStructured: true, processing: false }
+        : null,
+    })),
 
   reset: () =>
     set({
@@ -41,5 +53,7 @@ export const useConsultStore = create<ConsultState>((set) => ({
       assessment: null,
       output: null,
       startedAt: null,
+      vitalSigns: null,
+      freeTextInput: null,
     }),
 }));

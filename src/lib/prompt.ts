@@ -29,6 +29,46 @@ SBAR形式:
 
 出力はJSONのみ。`;
 
+import { VitalSigns, FreeTextInput } from "@/types/consult";
+
+function buildVitalSection(vitals?: VitalSigns): string {
+  if (!vitals) return "";
+  const labels: Record<string, { label: string; unit: string }> = {
+    temperature: { label: "体温", unit: "℃" },
+    spo2: { label: "SpO2", unit: "%" },
+    pulse: { label: "脈拍", unit: "回/分" },
+    bloodPressure: { label: "血圧（収縮期）", unit: "mmHg" },
+    respiratoryRate: { label: "呼吸数", unit: "回/分" },
+  };
+
+  const lines: string[] = [];
+  for (const [key, reading] of Object.entries(vitals)) {
+    const info = labels[key];
+    if (!info) continue;
+    if (reading.inputMode === "not_measured" || reading.value === null) {
+      lines.push(`- ${info.label}: 未測定`);
+    } else {
+      lines.push(`- ${info.label}: ${reading.value}${info.unit}（${reading.status}）`);
+    }
+  }
+
+  return lines.length > 0
+    ? `\nバイタルサイン:\n${lines.join("\n")}\n`
+    : "";
+}
+
+function buildObservationSection(freeText?: FreeTextInput): string {
+  if (!freeText || !freeText.rawText.trim()) return "";
+  let section = `\n追加観察メモ:\n${freeText.rawText}\n`;
+  if (freeText.isStructured && freeText.structured.length > 0) {
+    section += "構造化情報:\n";
+    for (const obs of freeText.structured) {
+      section += `- [${obs.type}] ${obs.content}（緊急度寄与: ${obs.urgencyContribution}）\n`;
+    }
+  }
+  return section;
+}
+
 export function buildUserPrompt(
   categoryLabel: string,
   answers: { question: string; answer: string | null }[],
@@ -38,7 +78,9 @@ export function buildUserPrompt(
     actions: string[];
     safetyNote: string;
   },
-  ragContext?: string
+  ragContext?: string,
+  vitals?: VitalSigns,
+  freeText?: FreeTextInput
 ): string {
   const answersText = answers
     .map((a) => `- ${a.question}: ${a.answer || "未確認"}`)
@@ -48,11 +90,15 @@ export function buildUserPrompt(
     ? `\n参考資料（施設ガイドライン等）:\n${ragContext}\n`
     : "";
 
+  const vitalSection = buildVitalSection(vitals);
+  const observationSection = buildObservationSection(freeText);
+
   return `以下の利用者の観察情報から、summary, doctor_message, sbar, handover_text を生成してください。
 ${contextSection}
 カテゴリ: ${categoryLabel}
 観察内容:
 ${answersText}
+${vitalSection}${observationSection}
 
 評価:
 - priority: ${assessment.priority}
