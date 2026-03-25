@@ -1,7 +1,6 @@
 import { ConsultationOutput, InterviewAnswer, Assessment } from "@/types/consult";
 import { getCategoryById } from "./categories";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompt";
-import { retrieveForConsult } from "./rag";
 
 // ダミー出力生成（Phase 1-2: LLM未接続時のフォールバック）
 export function generateDummyOutput(
@@ -32,11 +31,12 @@ export function generateDummyOutput(
   };
 }
 
-// LLM接続版（Phase 3で有効化）
+// LLM接続版（ragContext はサーバーサイドの API route から渡される）
 export async function generateWithLLM(
   categoryId: string,
   answers: InterviewAnswer[],
-  assessment: Assessment
+  assessment: Assessment,
+  ragContext?: string
 ): Promise<ConsultationOutput> {
   const category = getCategoryById(categoryId);
   if (!category) {
@@ -50,18 +50,8 @@ export async function generateWithLLM(
   }
 
   try {
-    // RAG コンテキスト取得（失敗してもフォールバック）
-    let ragContext = "";
-    try {
-      ragContext = await retrieveForConsult(
-        category.label,
-        answers.map((a) => ({ question: a.question, answer: a.answer }))
-      );
-      if (ragContext) {
-        console.log(`[RAG] Context injected: ${ragContext.length} chars`);
-      }
-    } catch (err) {
-      console.warn("[RAG] retrieval failed, skipping:", err);
+    if (ragContext) {
+      console.log(`[RAG] Context injected: ${ragContext.length} chars`);
     }
 
     const userPrompt = buildUserPrompt(

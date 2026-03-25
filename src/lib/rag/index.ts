@@ -11,10 +11,10 @@ export async function ingestPdf(
   buffer: Buffer,
   filename: string
 ): Promise<RagDocument> {
-  // pdf-parse はサーバーサイド限定
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const pdfParse = require("pdf-parse") as (buffer: Buffer) => Promise<{ text: string }>;
-  const parsed = await pdfParse(buffer);
+  // pdf-parse v1 はサーバーサイド限定
+  const pdf = await import("pdf-parse");
+  const pdfParse = pdf.default ?? pdf;
+  const parsed = await (pdfParse as unknown as (buf: Buffer) => Promise<{ text: string }>)(buffer);
   const text = parsed.text;
 
   const docId = uuidv4();
