@@ -132,7 +132,7 @@ export default function OutputPage() {
         useConsultStore.getState().primaryPhysicianEmail || null;
       const res = await fetch("/api/notifications/send-handoff", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json; charset=utf-8" },
         body: JSON.stringify({
           caseId,
           handoff: draftPrimaryHandoff,

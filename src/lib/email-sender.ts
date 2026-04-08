@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import type { PrimaryHandoffPackage } from "@/types/consult";
 import {
   buildHandoffEmailBody,
+  buildHandoffEmailHtml,
   buildHandoffEmailSubject,
 } from "./email-templates";
 
@@ -69,8 +70,10 @@ export async function sendHandoffEmail(
     };
   }
 
+  const sentAt = new Date().toISOString();
   const subject = buildHandoffEmailSubject(input.handoff, input.caseId);
-  const text = buildHandoffEmailBody(input.handoff, input.caseId);
+  const text = buildHandoffEmailBody(input.handoff, input.caseId, sentAt);
+  const html = buildHandoffEmailHtml(input.handoff, input.caseId, sentAt);
 
   try {
     const { data, error } = await resend.emails.send({
@@ -79,6 +82,10 @@ export async function sendHandoffEmail(
       bcc: input.bcc && input.bcc.length > 0 ? input.bcc : undefined,
       subject,
       text,
+      html,
+      headers: {
+        "Content-Language": "ja",
+      },
     });
 
     if (error) {

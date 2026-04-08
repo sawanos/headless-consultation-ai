@@ -15,7 +15,23 @@ const RequestSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    // Content-Type を確認。charset 指定がある場合 utf-8 のみ許可
+    const ctype = request.headers.get("content-type") || "";
+    const charsetMatch = ctype.match(/charset=([^;]+)/i);
+    if (charsetMatch && charsetMatch[1].trim().toLowerCase() !== "utf-8") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `非対応の文字コード: ${charsetMatch[1]}（utf-8 で送信してください）`,
+        },
+        { status: 415 }
+      );
+    }
+
+    // Body を ArrayBuffer 経由で UTF-8 として明示的にデコード
+    const buffer = await request.arrayBuffer();
+    const text = new TextDecoder("utf-8", { fatal: false }).decode(buffer);
+    const body = JSON.parse(text);
     const parsed = RequestSchema.parse(body);
 
     if (!isEmailEnabled()) {
