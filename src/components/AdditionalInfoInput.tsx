@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FreeTextInput, StructuredObservation } from "@/types/consult";
+import VoiceInputButton from "@/components/VoiceInputButton";
 
 type ObservationTagProps = {
   obs: StructuredObservation;
@@ -52,9 +53,24 @@ export default function AdditionalInfoInput({ freeText, onChange }: Props) {
     });
   };
 
+  const handleVoiceTranscript = (transcript: string) => {
+    const newText = text ? `${text}\n${transcript}` : transcript;
+    setText(newText);
+    onChange({
+      ...freeText,
+      rawText: newText,
+      isStructured: false,
+      structured: [],
+      processing: false,
+    });
+  };
+
   return (
     <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
-      <h3 className="font-bold text-gray-700">追加情報（自由記述・任意）</h3>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="font-bold text-gray-700">追加情報（自由記述・任意）</h3>
+        <VoiceInputButton onTranscript={handleVoiceTranscript} size="sm" />
+      </div>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
