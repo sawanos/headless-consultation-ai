@@ -17,6 +17,11 @@ export default function InterviewPage() {
   const setAnswers = useConsultStore((s) => s.setAnswers);
   const setVitalSigns = useConsultStore((s) => s.setVitalSigns);
   const setFreeTextInput = useConsultStore((s) => s.setFreeTextInput);
+  const setAssessment = useConsultStore((s) => s.setAssessment);
+  const setTriageDecision = useConsultStore((s) => s.setTriageDecision);
+  const setFrontlineGuidance = useConsultStore((s) => s.setFrontlineGuidance);
+  const setDraftPrimaryHandoff = useConsultStore((s) => s.setDraftPrimaryHandoff);
+  const setCaseStatus = useConsultStore((s) => s.setCaseStatus);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [localAnswers, setLocalAnswers] = useState<Record<string, string>>({});
   const [showOptionalInputs, setShowOptionalInputs] = useState(false);
@@ -27,6 +32,7 @@ export default function InterviewPage() {
     structured: [],
     processing: false,
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const questions = category ? getQuestions(category) : [];
 
@@ -48,7 +54,6 @@ export default function InterviewPage() {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      // 全問完了 → オプション入力画面を表示
       setShowOptionalInputs(true);
     }
   };
@@ -57,7 +62,7 @@ export default function InterviewPage() {
     handleNext();
   };
 
-  const handleGoToAssessment = () => {
+  const handleGoToAssessment = async () => {
     const interviewAnswers: InterviewAnswer[] = questions.map((q) => ({
       questionId: q.id,
       question: q.text,
@@ -66,7 +71,6 @@ export default function InterviewPage() {
     }));
     setAnswers(interviewAnswers);
 
-    // バイタル・フリーテキストをstoreに保存
     const hasVitalInput = Object.values(vitals).some((r) => r.value !== null);
     if (hasVitalInput) {
       setVitalSigns(vitals);
@@ -75,7 +79,50 @@ export default function InterviewPage() {
       setFreeTextInput(freeText);
     }
 
-    router.push("/consult/assessment");
+    // Triage API 呼び出し
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/consult/triage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category,
+          answers: interviewAnswers,
+          ...(hasVitalInput ? { vitals } : {}),
+          ...(freeText.rawText.trim() ? { freeText } : {}),
+        }),
+      });
+      const data = await res.json();
+      setTriageDecision(data.triage);
+      setFrontlineGuidance(data.frontlineGuidance);
+      if (data.draftPrimaryHandoff) {
+        setDraftPrimaryHandoff(data.draftPrimaryHandoff);
+      }
+      setCaseStatus("ai_triaged");
+
+      // 既存互換: assessment も生成（risk-engine ベース）
+      const { assessRisk } = await import("@/lib/risk-engine");
+      const assessment = assessRisk(
+        category,
+        interviewAnswers,
+        hasVitalInput ? vitals : undefined,
+        freeText.rawText.trim() ? freeText : undefined
+      );
+      setAssessment(assessment);
+    } catch {
+      // フォールバック: triage API失敗時は既存risk-engineで直接判定
+      const { assessRisk } = await import("@/lib/risk-engine");
+      const assessment = assessRisk(
+        category,
+        interviewAnswers,
+        hasVitalInput ? vitals : undefined,
+        freeText.rawText.trim() ? freeText : undefined
+      );
+      setAssessment(assessment);
+    } finally {
+      setSubmitting(false);
+      router.push("/consult/assessment");
+    }
   };
 
   if (showOptionalInputs) {
@@ -100,9 +147,10 @@ export default function InterviewPage() {
         <StickyFooter>
           <button
             onClick={handleGoToAssessment}
-            className="w-full py-4 bg-blue-500 text-white text-xl font-bold rounded-2xl hover:bg-blue-600 active:scale-[0.98] transition-all"
+            disabled={submitting}
+            className="w-full py-4 bg-blue-500 text-white text-xl font-bold rounded-2xl hover:bg-blue-600 active:scale-[0.98] transition-all disabled:opacity-50"
           >
-            結果を見る
+            {submitting ? "判定中..." : "結果を見る"}
           </button>
         </StickyFooter>
       </div>

@@ -13,6 +13,14 @@ export const useConsultStore = create<ConsultState>((set) => ({
   startedAt: null,
   vitalSigns: null,
   freeTextInput: null,
+  // v6 フィールド
+  triageDecision: null,
+  frontlineGuidance: null,
+  draftPrimaryHandoff: null,
+  caseStatus: "draft",
+  emergencyBypassed: false,
+  handoffDelivery: null,
+  managerClinicalReview: null,
 
   startConsult: () =>
     set({
@@ -26,6 +34,14 @@ export const useConsultStore = create<ConsultState>((set) => ({
       output: null,
       vitalSigns: null,
       freeTextInput: null,
+      // v6 初期化
+      triageDecision: null,
+      frontlineGuidance: null,
+      draftPrimaryHandoff: null,
+      caseStatus: "draft",
+      emergencyBypassed: false,
+      handoffDelivery: null,
+      managerClinicalReview: null,
     }),
 
   setCategory: (category) => set({ category }),
@@ -43,6 +59,15 @@ export const useConsultStore = create<ConsultState>((set) => ({
         : null,
     })),
 
+  // v6 アクション
+  setTriageDecision: (triage) => set({ triageDecision: triage }),
+  setFrontlineGuidance: (guidance) => set({ frontlineGuidance: guidance }),
+  setDraftPrimaryHandoff: (handoff) => set({ draftPrimaryHandoff: handoff }),
+  setCaseStatus: (status) => set({ caseStatus: status }),
+  setEmergencyBypassed: (bypassed) => set({ emergencyBypassed: bypassed }),
+  setHandoffDelivery: (record) => set({ handoffDelivery: record }),
+  setManagerClinicalReview: (review) => set({ managerClinicalReview: review }),
+
   reset: () =>
     set({
       caseId: null,
@@ -55,5 +80,13 @@ export const useConsultStore = create<ConsultState>((set) => ({
       startedAt: null,
       vitalSigns: null,
       freeTextInput: null,
+      // v6 リセット
+      triageDecision: null,
+      frontlineGuidance: null,
+      draftPrimaryHandoff: null,
+      caseStatus: "draft",
+      emergencyBypassed: false,
+      handoffDelivery: null,
+      managerClinicalReview: null,
     }),
 }));

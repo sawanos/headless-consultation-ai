@@ -38,6 +38,25 @@ export default function Home() {
             緊急時はすぐに医師・救急に連絡してください。
           </p>
         </div>
+
+        {/* 管理者・医師向け導線 */}
+        <div className="border-t border-gray-200 pt-4 space-y-2">
+          <p className="text-xs text-gray-400">管理者・医師向けメニュー</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push("/admin/cases")}
+              className="flex-1 py-2 text-sm text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
+            >
+              ケース管理
+            </button>
+            <button
+              onClick={() => router.push("/clinician/queue")}
+              className="flex-1 py-2 text-sm text-orange-600 bg-orange-50 rounded-xl hover:bg-orange-100 transition-colors"
+            >
+              遠隔医師キュー
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

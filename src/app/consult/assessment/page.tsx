@@ -7,6 +7,7 @@ import PriorityBadge from "@/components/PriorityBadge";
 import ActionList from "@/components/ActionList";
 import StickyFooter from "@/components/StickyFooter";
 import VitalStatusBadge from "@/components/vitals/VitalStatusBadge";
+import TriageResultCard from "@/components/intake/TriageResultCard";
 import { useEffect } from "react";
 
 export default function AssessmentPage() {
@@ -17,9 +18,20 @@ export default function AssessmentPage() {
   const setAssessment = useConsultStore((s) => s.setAssessment);
   const vitalSigns = useConsultStore((s) => s.vitalSigns);
   const freeTextInput = useConsultStore((s) => s.freeTextInput);
+  const triageDecision = useConsultStore((s) => s.triageDecision);
+  const frontlineGuidance = useConsultStore((s) => s.frontlineGuidance);
+  const emergencyBypassed = useConsultStore((s) => s.emergencyBypassed);
 
   useEffect(() => {
-    if (!category || answers.length === 0) {
+    if (!category) {
+      router.replace("/consult/start");
+      return;
+    }
+    // Emergency bypass: skip assessment, show emergency card
+    if (emergencyBypassed) {
+      return;
+    }
+    if (answers.length === 0) {
       router.replace("/consult/start");
       return;
     }
@@ -32,9 +44,68 @@ export default function AssessmentPage() {
       );
       setAssessment(result);
     }
-  }, [category, answers, assessment, setAssessment, vitalSigns, freeTextInput, router]);
+  }, [category, answers, assessment, setAssessment, vitalSigns, freeTextInput, router, emergencyBypassed]);
+
+  // Emergency bypass view
+  if (emergencyBypassed) {
+    return (
+      <div className="px-4 py-8 pb-32">
+        <div className="bg-red-100 border-2 border-red-400 rounded-2xl p-8 text-center space-y-4">
+          <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto">
+            <span className="text-3xl text-white font-bold">!</span>
+          </div>
+          <h1 className="text-2xl font-bold text-red-800">緊急対応</h1>
+          <p className="text-lg text-red-700 leading-relaxed">
+            すぐに通常救急導線（119番・主治医直接連絡）を検討してください
+          </p>
+          <div className="bg-white/60 rounded-xl p-4">
+            <ul className="text-left text-sm text-red-700 space-y-2">
+              <li>- 安全確保（転倒・転落防止、気道確保）</li>
+              <li>- 救急車要請を検討する</li>
+              <li>- 主治医へ即連絡する</li>
+            </ul>
+          </div>
+          <p className="text-xs text-red-500">
+            これは医療診断ではありません。直ちに救急対応を優先してください。
+          </p>
+        </div>
+
+        <StickyFooter>
+          <button
+            onClick={() => router.push("/")}
+            className="w-full py-4 bg-gray-500 text-white text-xl font-bold rounded-2xl hover:bg-gray-600 active:scale-[0.98] transition-all"
+          >
+            トップに戻る
+          </button>
+        </StickyFooter>
+      </div>
+    );
+  }
 
   if (!assessment) return null;
+
+  // 3分岐表示: triageDecision があればそちらを優先表示
+  const bucket = triageDecision?.bucket;
+
+  // Emergency bypass from triage
+  if (bucket === "emergency_bypass") {
+    return (
+      <div className="px-4 py-8 pb-32">
+        {triageDecision && frontlineGuidance && (
+          <TriageResultCard triage={triageDecision} guidance={frontlineGuidance} />
+        )}
+
+        <StickyFooter>
+          <button
+            onClick={() => router.push("/")}
+            className="w-full py-4 bg-gray-500 text-white text-xl font-bold rounded-2xl hover:bg-gray-600 active:scale-[0.98] transition-all"
+          >
+            トップに戻る
+          </button>
+        </StickyFooter>
+      </div>
+    );
+  }
 
   const targetLabel =
     assessment.target === "cardiology"
@@ -66,6 +137,13 @@ export default function AssessmentPage() {
 
   return (
     <div className="px-4 py-8 pb-32">
+      {/* Triage result card if available */}
+      {triageDecision && frontlineGuidance && (
+        <div className="mb-6">
+          <TriageResultCard triage={triageDecision} guidance={frontlineGuidance} />
+        </div>
+      )}
+
       <div className="text-center mb-8">
         <PriorityBadge priority={assessment.priority} />
         <p className="text-lg text-gray-600 mt-4 leading-relaxed">
@@ -116,7 +194,7 @@ export default function AssessmentPage() {
           onClick={() => router.push("/consult/output")}
           className="w-full py-4 bg-blue-500 text-white text-xl font-bold rounded-2xl hover:bg-blue-600 active:scale-[0.98] transition-all"
         >
-          相談文をつくる
+          {bucket === "clinician_review" ? "現場向け情報と相談文を見る" : "相談文をつくる"}
         </button>
       </StickyFooter>
     </div>
