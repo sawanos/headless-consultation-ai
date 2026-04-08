@@ -13,6 +13,7 @@ export const useConsultStore = create<ConsultState>((set) => ({
   startedAt: null,
   vitalSigns: null,
   freeTextInput: null,
+  primaryPhysicianEmail: null,
   // v6 フィールド
   triageDecision: null,
   frontlineGuidance: null,
@@ -23,7 +24,7 @@ export const useConsultStore = create<ConsultState>((set) => ({
   managerClinicalReview: null,
 
   startConsult: () =>
-    set({
+    set((state) => ({
       caseId: uuidv4(),
       startedAt: new Date().toISOString(),
       category: null,
@@ -34,6 +35,8 @@ export const useConsultStore = create<ConsultState>((set) => ({
       output: null,
       vitalSigns: null,
       freeTextInput: null,
+      // primaryPhysicianEmail はセッションを跨いで保持する
+      primaryPhysicianEmail: state.primaryPhysicianEmail,
       // v6 初期化
       triageDecision: null,
       frontlineGuidance: null,
@@ -42,7 +45,7 @@ export const useConsultStore = create<ConsultState>((set) => ({
       emergencyBypassed: false,
       handoffDelivery: null,
       managerClinicalReview: null,
-    }),
+    })),
 
   setCategory: (category) => set({ category }),
   setQuickGuide: (guide) => set({ quickGuide: guide }),
@@ -52,6 +55,7 @@ export const useConsultStore = create<ConsultState>((set) => ({
   setOutput: (output) => set({ output }),
   setVitalSigns: (vitals) => set({ vitalSigns: vitals }),
   setFreeTextInput: (input) => set({ freeTextInput: input }),
+  setPrimaryPhysicianEmail: (email) => set({ primaryPhysicianEmail: email }),
   updateFreeTextStructured: (structured) =>
     set((state) => ({
       freeTextInput: state.freeTextInput
@@ -69,7 +73,7 @@ export const useConsultStore = create<ConsultState>((set) => ({
   setManagerClinicalReview: (review) => set({ managerClinicalReview: review }),
 
   reset: () =>
-    set({
+    set((state) => ({
       caseId: null,
       category: null,
       quickGuide: null,
@@ -80,6 +84,7 @@ export const useConsultStore = create<ConsultState>((set) => ({
       startedAt: null,
       vitalSigns: null,
       freeTextInput: null,
+      primaryPhysicianEmail: state.primaryPhysicianEmail,
       // v6 リセット
       triageDecision: null,
       frontlineGuidance: null,
@@ -88,5 +93,5 @@ export const useConsultStore = create<ConsultState>((set) => ({
       emergencyBypassed: false,
       handoffDelivery: null,
       managerClinicalReview: null,
-    }),
+    })),
 }));

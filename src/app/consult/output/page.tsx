@@ -32,6 +32,11 @@ export default function OutputPage() {
   const [ragContext, setRagContext] = useState<string | null>(null);
   const [caseSaved, setCaseSaved] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [emailResult, setEmailResult] = useState<
+    | { success: true; to: string[]; messageId?: string }
+    | { success: false; error: string }
+    | null
+  >(null);
 
   const bucket = triageDecision?.bucket;
 
@@ -84,6 +89,7 @@ export default function OutputPage() {
         triage: triageDecision,
         frontlineGuidance: useConsultStore.getState().frontlineGuidance,
         primaryHandoff: draftPrimaryHandoff ?? null,
+        primaryPhysicianEmail: useConsultStore.getState().primaryPhysicianEmail,
         status,
       }),
     })
@@ -107,16 +113,52 @@ export default function OutputPage() {
 
   const handleSend = async () => {
     if (!caseId || !startedAt) return;
+    if (!draftPrimaryHandoff) {
+      alert("Handoff が未生成です。もう一度お試しください。");
+      return;
+    }
     setSending(true);
+    setEmailResult(null);
     try {
+      // 1) レガシー記録（既存挙動の保持）
       await fetch("/api/consult/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ caseId, startedAt, edited: false }),
+      }).catch(() => {/* legacy: 失敗しても無視 */});
+
+      // 2) 主治医メール送信（payload を直接送ることで case-store 依存を回避）
+      const emailTo =
+        useConsultStore.getState().primaryPhysicianEmail || null;
+      const res = await fetch("/api/notifications/send-handoff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({
+          caseId,
+          handoff: draftPrimaryHandoff,
+          to: emailTo,
+        }),
       });
-      setSent(true);
-    } catch {
-      alert("送信に失敗しました。もう一度お試しください。");
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setEmailResult({
+          success: true,
+          to: data.to || [],
+          messageId: data.messageId,
+        });
+        setSent(true);
+      } else {
+        setEmailResult({
+          success: false,
+          error: data.error || `HTTP ${res.status}`,
+        });
+        // 送信失敗でも sent 画面には進ませず、エラーをそのまま表示
+      }
+    } catch (e) {
+      setEmailResult({
+        success: false,
+        error: e instanceof Error ? e.message : "送信に失敗しました",
+      });
     } finally {
       setSending(false);
     }
@@ -385,6 +427,22 @@ export default function OutputPage() {
 
       <StickyFooter>
         <div className="space-y-3">
+          {emailResult && !emailResult.success && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              <p className="font-medium">メール送信に失敗しました</p>
+              <p className="text-xs mt-1 break-words">{emailResult.error}</p>
+            </div>
+          )}
+          {emailResult && emailResult.success && (
+            <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+              <p className="font-medium">主治医メールを送信しました</p>
+              {emailResult.to.length > 0 && (
+                <p className="text-xs mt-1 break-words">
+                  宛先: {emailResult.to.join(", ")}
+                </p>
+              )}
+            </div>
+          )}
           <button
             onClick={handleSend}
             disabled={sending}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { VitalReading } from "@/types/consult";
 import { VITAL_RANGES, evaluateStatus } from "./vitalRanges";
 import VitalStatusBadge from "./VitalStatusBadge";
+import VoiceInputButton from "@/components/VoiceInputButton";
 
 type Props = {
   vitalKey: string;
@@ -29,6 +30,13 @@ export default function VitalTabInput({ vitalKey, reading, onChange }: Props) {
   const handleValueChange = (val: string) => {
     const status = evaluateStatus(vitalKey, val);
     onChange({ value: val, inputMode: mode, status });
+  };
+
+  const handleVoiceTranscript = (transcript: string) => {
+    // 既存値があれば半角スペースで追記、なければそのまま
+    const current = reading.value || "";
+    const newValue = current ? `${current} ${transcript}` : transcript;
+    handleValueChange(newValue);
   };
 
   return (
@@ -58,14 +66,21 @@ export default function VitalTabInput({ vitalKey, reading, onChange }: Props) {
       </div>
 
       {mode !== "not_measured" && (
-        <input
-          type={mode === "tab" ? "number" : "text"}
-          inputMode={mode === "tab" ? "decimal" : "text"}
-          value={reading.value || ""}
-          onChange={(e) => handleValueChange(e.target.value)}
-          placeholder={range.placeholder}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-300"
-        />
+        <div className="space-y-2">
+          <input
+            type={mode === "tab" ? "number" : "text"}
+            inputMode={mode === "tab" ? "decimal" : "text"}
+            value={reading.value || ""}
+            onChange={(e) => handleValueChange(e.target.value)}
+            placeholder={range.placeholder}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-300"
+          />
+          <VoiceInputButton
+            onTranscript={handleVoiceTranscript}
+            size="sm"
+            label="音声で入力"
+          />
+        </div>
       )}
     </div>
   );

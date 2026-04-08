@@ -16,14 +16,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ attempted: false, reason: "即時通知対象外のケースです" });
     }
 
-    const result = await sendImmediateNotification(c.primaryHandoff, ["primary_physician", "manager"]);
+    const result = await sendImmediateNotification(
+      c.primaryHandoff,
+      c.id,
+      c.primaryPhysicianEmail
+    );
 
-    const log = createAuditLog("system", "immediate_notification_attempted",
-      result.delivered ? "即時通知を送信しました" : `即時通知失敗: ${result.errorMessage || "不明"}`,
+    const log = createAuditLog(
+      "system",
+      "immediate_notification_attempted",
+      result.delivered ? "即時通知メールを送信しました" : `即時通知失敗: ${result.errorMessage || "不明"}`,
       undefined,
       { delivered: result.delivered, recipients: result.recipients }
     );
     appendAuditLog(parsed.caseId, log);
+
+    if (result.delivered) {
+      const sentLog = createAuditLog(
+        "system",
+        "email_sent",
+        `メール送信成功: ${result.recipients.join(", ")}`,
+        undefined,
+        { channel: "email", recipients: result.recipients }
+      );
+      appendAuditLog(parsed.caseId, sentLog);
+    } else if (result.attempted) {
+      const failLog = createAuditLog(
+        "system",
+        "email_send_failed",
+        `メール送信失敗: ${result.errorMessage || "不明"}`,
+        undefined,
+        { error: result.errorMessage }
+      );
+      appendAuditLog(parsed.caseId, failLog);
+    }
 
     return NextResponse.json(result);
   } catch (error) {
