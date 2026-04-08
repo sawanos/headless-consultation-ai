@@ -17,6 +17,9 @@ export async function POST(request: Request) {
       existing.triage = parsed.triage ?? existing.triage;
       existing.frontlineGuidance = parsed.frontlineGuidance ?? existing.frontlineGuidance;
       existing.primaryHandoff = parsed.primaryHandoff ?? existing.primaryHandoff;
+      if (parsed.primaryPhysicianEmail !== undefined) {
+        existing.primaryPhysicianEmail = parsed.primaryPhysicianEmail;
+      }
       existing.updatedAt = now;
       caseStore.save(existing);
     } else {
@@ -38,6 +41,7 @@ export async function POST(request: Request) {
         auditLogs: [],
         createdAt: now,
         updatedAt: now,
+        primaryPhysicianEmail: parsed.primaryPhysicianEmail ?? null,
       };
       caseStore.save(newCase);
 

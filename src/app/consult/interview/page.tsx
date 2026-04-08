@@ -17,6 +17,8 @@ export default function InterviewPage() {
   const setAnswers = useConsultStore((s) => s.setAnswers);
   const setVitalSigns = useConsultStore((s) => s.setVitalSigns);
   const setFreeTextInput = useConsultStore((s) => s.setFreeTextInput);
+  const primaryPhysicianEmail = useConsultStore((s) => s.primaryPhysicianEmail);
+  const setPrimaryPhysicianEmail = useConsultStore((s) => s.setPrimaryPhysicianEmail);
   const setAssessment = useConsultStore((s) => s.setAssessment);
   const setTriageDecision = useConsultStore((s) => s.setTriageDecision);
   const setFrontlineGuidance = useConsultStore((s) => s.setFrontlineGuidance);
@@ -143,6 +145,20 @@ export default function InterviewPage() {
           freeText={freeText}
           onChange={setFreeText}
         />
+
+        <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
+          <h3 className="font-bold text-gray-700">主治医メール（任意）</h3>
+          <p className="text-xs text-gray-500">
+            ハンドオフ完成後、自動でメール通知できます。未入力の場合はシステム既定の宛先が使われます。
+          </p>
+          <input
+            type="email"
+            value={primaryPhysicianEmail || ""}
+            onChange={(e) => setPrimaryPhysicianEmail(e.target.value || null)}
+            placeholder="doctor@example.com"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-300"
+          />
+        </div>
 
         <StickyFooter>
           <button

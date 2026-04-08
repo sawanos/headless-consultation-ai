@@ -3,6 +3,7 @@ import type {
   PrimaryHandoffPackage,
 } from "@/types/consult";
 import { toCopyText, toPrintablePayload } from "./handoff";
+import { isEmailEnabled, sendHandoffEmail } from "./email-sender";
 
 export type HandoffChannelAdapter = {
   channel: ShareChannel;
@@ -42,7 +43,8 @@ const secureLinkAdapter: HandoffChannelAdapter = {
 
 const emailPlaceholderAdapter: HandoffChannelAdapter = {
   channel: "email_placeholder",
-  isAvailable: () => !!process.env.EMAIL_ADAPTER_ENABLED,
+  // Resend が設定されていれば実送信可能
+  isAvailable: () => isEmailEnabled(),
   buildPayload: (handoff) => ({
     subject: `【相談サポート】${handoff.headline}`,
     body: handoff.shareText,
@@ -77,37 +79,42 @@ export function getAvailableChannels(): ShareChannel[] {
 
 export async function sendImmediateNotification(
   handoff: PrimaryHandoffPackage,
-  recipients: string[]
+  caseId: string,
+  recipientEmail?: string | null
 ): Promise<ImmediateNotificationResult> {
   if (!handoff.notificationPolicy.immediateEmailEligible) {
     return { attempted: false, delivered: false, recipients: [] };
   }
 
-  const emailAdapter = getAdapter("email_placeholder");
-  if (!emailAdapter || !emailAdapter.isAvailable()) {
+  if (!isEmailEnabled()) {
     return {
       attempted: true,
       delivered: false,
-      recipients,
-      errorMessage: "Email adapter is not available. Use manual sharing.",
+      recipients: recipientEmail ? [recipientEmail] : [],
+      errorMessage:
+        "メール送信が設定されていません（RESEND_API_KEY 未設定）",
     };
   }
 
-  try {
-    // MVP: payload 生成のみ。実送信は将来実装。
-    emailAdapter.buildPayload(handoff);
+  const result = await sendHandoffEmail({
+    caseId,
+    handoff,
+    to: recipientEmail || null,
+  });
+
+  if (result.success) {
     return {
       attempted: true,
       delivered: true,
-      deliveredAt: new Date().toISOString(),
-      recipients,
-    };
-  } catch (e) {
-    return {
-      attempted: true,
-      delivered: false,
-      recipients,
-      errorMessage: e instanceof Error ? e.message : "Unknown error",
+      deliveredAt: result.sentAt,
+      recipients: result.to,
     };
   }
+
+  return {
+    attempted: true,
+    delivered: false,
+    recipients: result.to,
+    errorMessage: result.error,
+  };
 }

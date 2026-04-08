@@ -317,6 +317,7 @@ export const SaveCaseV6RequestSchema = z.object({
   triage: TriageDecisionSchema.optional().nullable(),
   frontlineGuidance: FrontlineGuidanceV6Schema.optional().nullable(),
   primaryHandoff: PrimaryHandoffPackageSchema.optional().nullable(),
+  primaryPhysicianEmail: z.string().email().optional().nullable(),
   status: CaseStatusV6Schema,
 });
 

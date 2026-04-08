@@ -154,6 +154,7 @@ export type ConsultState = {
   startedAt: string | null;
   vitalSigns: VitalSigns | null;
   freeTextInput: FreeTextInput | null;
+  primaryPhysicianEmail: string | null;
   // v6 フィールド
   triageDecision: TriageDecision | null;
   frontlineGuidance: FrontlineGuidanceV6 | null;
@@ -171,6 +172,7 @@ export type ConsultState = {
   setOutput: (output: ConsultationOutput) => void;
   setVitalSigns: (vitals: VitalSigns) => void;
   setFreeTextInput: (input: FreeTextInput) => void;
+  setPrimaryPhysicianEmail: (email: string | null) => void;
   updateFreeTextStructured: (structured: StructuredObservation[]) => void;
   startConsult: () => void;
   reset: () => void;
@@ -414,7 +416,9 @@ export type AuditActionV6 =
   | "manager_clinical_review_recorded"
   | "immediate_notification_attempted"
   | "daily_digest_sent"
-  | "manager_closed_case";
+  | "manager_closed_case"
+  | "email_sent"
+  | "email_send_failed";
 
 export type AuditLogV6 = {
   at: string;
@@ -443,6 +447,7 @@ export type ConsultationCaseV6 = {
   auditLogs: AuditLogV6[];
   createdAt: string;
   updatedAt: string;
+  primaryPhysicianEmail?: string | null;
   legacyAssessment?: Assessment | null;
   legacyOutput?: ConsultationOutput | null;
 };

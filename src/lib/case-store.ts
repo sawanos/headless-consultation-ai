@@ -87,6 +87,14 @@ class CaseStore {
       c.updatedAt = new Date().toISOString();
     }
   }
+
+  setPrimaryPhysicianEmail(id: string, email: string | null): void {
+    const c = this.cases.get(id);
+    if (c) {
+      c.primaryPhysicianEmail = email;
+      c.updatedAt = new Date().toISOString();
+    }
+  }
 }
 
 // グローバルシングルトン（Next.js hot reload 対策）

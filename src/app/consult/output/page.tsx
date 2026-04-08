@@ -84,6 +84,7 @@ export default function OutputPage() {
         triage: triageDecision,
         frontlineGuidance: useConsultStore.getState().frontlineGuidance,
         primaryHandoff: draftPrimaryHandoff ?? null,
+        primaryPhysicianEmail: useConsultStore.getState().primaryPhysicianEmail,
         status,
       }),
     })
